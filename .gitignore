@@ -1,0 +1,11 @@
+sketch_vis/*
+sketch_png/*
+sketch_cls/*
+pixel_images/*
+models/*
+inception/*
+data_zip/*
+data_additional/*
+sketch_sml/*
+*.p
+*.pyc

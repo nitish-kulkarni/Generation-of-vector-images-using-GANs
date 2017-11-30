@@ -1,0 +1,60 @@
+alarm clock
+apple
+banana
+basketball
+bat
+bed
+bee
+bicycle
+book
+boomerang
+bracelet
+bus
+butterfly
+calculator
+candle
+car
+carrot
+cat
+cell phone
+chair
+circle
+cloud
+cookie
+cup
+diamond
+door
+eye
+face
+fish
+frying pan
+guitar
+hammer
+hat
+hourglass
+key
+ladder
+light bulb
+lollipop
+microwave
+mountain
+mouth
+mug
+mushroom
+necklace
+onion
+paintbrush
+paper clip
+parachute
+passport
+pear
+pencil
+piano
+pig
+pillow
+pizza
+potato
+radio
+saw
+scissors
+shoe
