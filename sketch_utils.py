@@ -200,7 +200,7 @@ class DataLoader(object):
   """Class for loading data."""
 
   def __init__(self,
-               strokes,
+               data,
                batch_size=100,
                max_seq_length=250,
                scale_factor=1.0,
@@ -216,32 +216,32 @@ class DataLoader(object):
     self.limit = limit
     self.augment_stroke_prob = augment_stroke_prob  # data augmentation method
     self.start_stroke_token = [0, 0, 1, 0, 0]  # S_0 in sketch-rnn paper
-    # sets self.strokes (list of ndarrays, one per sketch, in stroke-3 format,
-    # sorted by size)
-    self.preprocess(strokes)
+    # sets self.data which is a list of ndarrays, one per sketch, in stroke-3
+    # format, sorted by size in as (sketch, image) pairs
+    self.preprocess(data)
 
-  def preprocess(self, strokes):
+  def preprocess(self, data):
     """Remove entries from strokes having > max_seq_length points."""
     raw_data = []
     seq_len = []
     count_data = 0
 
-    for i in range(len(strokes)):
-      data = strokes[i]
-      if len(data) <= (self.max_seq_length):
+    for i in range(len(data)):
+      strokes, image = data[i]
+      if len(strokes) <= (self.max_seq_length):
         count_data += 1
         # removes large gaps from the data
-        data = np.minimum(data, self.limit)
-        data = np.maximum(data, -self.limit)
-        data = np.array(data, dtype=np.float32)
-        data[:, 0:2] /= self.scale_factor
-        raw_data.append(data)
-        seq_len.append(len(data))
+        strokes = np.minimum(strokes, self.limit)
+        strokes = np.maximum(strokes, -self.limit)
+        strokes = np.array(strokes, dtype=np.float32)
+        strokes[:, 0:2] /= self.scale_factor
+        raw_data += [[strokes, image]]
+        seq_len += [len(strokes)]
     seq_len = np.array(seq_len)  # nstrokes for each sketch
     idx = np.argsort(seq_len)
-    self.strokes = []
+    self.data = []
     for i in range(len(seq_len)):
-      self.strokes.append(raw_data[idx[i]])
+      self.data.append(raw_data[idx[i]])
     print("total images <= max_seq_len is %d" % count_data)
     self.num_batches = int(count_data / self.batch_size)
 
@@ -264,12 +264,13 @@ class DataLoader(object):
   def calculate_normalizing_scale_factor(self):
     """Calculate the normalizing factor explained in appendix of sketch-rnn."""
     data = []
-    for i in range(len(self.strokes)):
-      if len(self.strokes[i]) > self.max_seq_length:
+    for i in range(len(self.data)):
+      strokes, image = self.data[i]
+      if len(strokes) > self.max_seq_length:
         continue
-      for j in range(len(self.strokes[i])):
-        data.append(self.strokes[i][j, 0])
-        data.append(self.strokes[i][j, 1])
+      for j in range(len(strokes)):
+        data.append(strokes[j, 0])
+        data.append(strokes[j, 1])
     data = np.array(data)
     return np.std(data)
 
@@ -278,29 +279,32 @@ class DataLoader(object):
     if scale_factor is None:
       scale_factor = self.calculate_normalizing_scale_factor()
     self.scale_factor = scale_factor
-    for i in range(len(self.strokes)):
-      self.strokes[i][:, 0:2] /= self.scale_factor
+    for i in range(len(self.data)):
+      self.data[i][0][:, 0:2] /= self.scale_factor
 
   def _get_batch_from_indices(self, indices):
     """Given a list of indices, return the potentially augmented batch."""
-    x_batch = []
+    image_batch = []
+    strokes_batch = []
     seq_len = []
     for idx in range(len(indices)):
       i = indices[idx]
-      data = self.random_scale(self.strokes[i])
+      strokes, image = self.data[i]
+      data = self.random_scale(strokes)
       data_copy = np.copy(data)
       if self.augment_stroke_prob > 0:
         data_copy = augment_strokes(data_copy, self.augment_stroke_prob)
-      x_batch.append(data_copy)
+      image_batch.append(image)
+      strokes_batch.append(data_copy)
       length = len(data_copy)
       seq_len.append(length)
     seq_len = np.array(seq_len, dtype=int)
-    # We return three things: stroke-3 format, stroke-5 format, list of seq_len.
-    return x_batch, self.pad_batch(x_batch, self.max_seq_length), seq_len
+    # We return three things: image, stroke-3 format, stroke-5 format, list of seq_len.
+    return image_batch, strokes_batch, self.pad_batch(strokes_batch, self.max_seq_length), seq_len
 
   def random_batch(self):
     """Return a randomised portion of the training data."""
-    idx = np.random.permutation(range(0, len(self.strokes)))[0:self.batch_size]
+    idx = np.random.permutation(range(0, len(self.data)))[0:self.batch_size]
     return self._get_batch_from_indices(idx)
 
   def get_batch(self, idx):
