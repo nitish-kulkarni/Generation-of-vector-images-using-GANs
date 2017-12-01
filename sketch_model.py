@@ -90,8 +90,19 @@ class Model(object):
         tf.logging.info('Model using gpu.')
         self.build_model(hps)
 
+  def encoder(self, batch):
+    z = rnn.super_linear(
+        batch,
+        self.hps.z_size,
+        input_size=4096,
+        scope='latent_z',
+        init_w='gaussian',
+        weight_start=0.001)
+    return z
+
+  """
   def encoder(self, batch, sequence_lengths):
-    """Define the bi-directional encoder module of sketch-rnn."""
+    #Define the bi-directional encoder module of sketch-rnn.
     unused_outputs, last_states = tf.nn.bidirectional_dynamic_rnn(
         self.enc_cell_fw,
         self.enc_cell_bw,
@@ -121,6 +132,7 @@ class Model(object):
         init_w='gaussian',
         weight_start=0.001)
     return mu, presig
+  """
 
   def build_model(self, hps):
     """Define model architecture."""
@@ -192,18 +204,22 @@ class Model(object):
 
     self.sequence_lengths = tf.placeholder(
         dtype=tf.int32, shape=[self.hps.batch_size])
-    self.input_data = tf.placeholder(
+    self.image = tf.placeholder(
+        dtype=tf.float32,
+        shape=[self.hps.batch_size, 4096])
+    self.strokes = tf.placeholder(
         dtype=tf.float32,
         shape=[self.hps.batch_size, self.hps.max_seq_len + 1, 5])
 
     # The target/expected vectors of strokes
-    self.output_x = self.input_data[:, 1:self.hps.max_seq_len + 1, :]
+    self.output_x = self.strokes[:, 1:self.hps.max_seq_len + 1, :]
     # vectors of strokes to be fed to decoder (same as above, but lagged behind
     # one step to include initial dummy value of (0, 0, 1, 0, 0))
-    self.input_x = self.input_data[:, :self.hps.max_seq_len, :]
+    self.input_x = self.strokes[:, :self.hps.max_seq_len, :]
 
     # either do vae-bit and get z, or do unconditional, decoder-only
     if hps.conditional:  # vae mode:
+      """
       self.mean, self.presig = self.encoder(self.output_x,
                                             self.sequence_lengths)
       self.sigma = tf.exp(self.presig / 2.0)  # sigma > 0. div 2.0 -> sqrt.
@@ -214,6 +230,11 @@ class Model(object):
       self.kl_cost = -0.5 * tf.reduce_mean(
           (1 + self.presig - tf.square(self.mean) - tf.exp(self.presig)))
       self.kl_cost = tf.maximum(self.kl_cost, self.hps.kl_tolerance)
+      """
+
+      self.batch_z = self.encoder(self.image)
+      self.kl_cost = tf.zeros([], dtype=tf.float32)
+
       pre_tile_y = tf.reshape(self.batch_z,
                               [self.hps.batch_size, 1, self.hps.z_size])
       overlay_x = tf.tile(pre_tile_y, [1, self.hps.max_seq_len, 1])

@@ -7,5 +7,6 @@ inception/*
 data_zip/*
 data_additional/*
 sketch_sml/*
+tmp/*
 *.p
 *.pyc

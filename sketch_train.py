@@ -212,7 +212,7 @@ def evaluate_model(sess, model, data_set):
   total_kl_cost = 0.0
   for batch in range(data_set.num_batches):
     image, unused_orig_x, strokes, s = data_set.get_batch(batch)
-    feed = {model.input_data: strokes, model.sequence_lengths: s}
+    feed = {model.image: image, model.strokes: strokes, model.sequence_lengths: s}
     (cost, r_cost,
      kl_cost) = sess.run([model.cost, model.r_cost, model.kl_cost], feed)
     total_cost += cost
@@ -279,7 +279,8 @@ def train(sess, model, eval_model, train_set, valid_set, test_set):
 
     image, _, strokes, s = train_set.random_batch()
     feed = {
-        model.input_data: strokes,
+        model.image: image,
+        model.strokes: strokes,
         model.sequence_lengths: s,
         model.lr: curr_learning_rate,
         model.kl_weight: curr_kl_weight
