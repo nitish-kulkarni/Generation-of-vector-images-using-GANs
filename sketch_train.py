@@ -128,18 +128,12 @@ def load_dataset(data_dir, model_params, inference_mode=False):
     data_filepath = os.path.join(data_dir, dataset)
     data = np.load(data_filepath)
 
-    # Randomly set 80% for training, 10% for validation, and 10% for testing
-    rand = np.random.permutation(np.arange(len(data)))
-    train_idx = rand[:int(8*len(data)/10)]
-    valid_idx = rand[int(8*len(data)/10) : int(9*len(data)/10)]
-    test_idx = rand[int(9*len(data)/10):]
+    train_set = data['train']
+    valid_set = data['valid']
+    test_set = data['test']
 
     tf.logging.info('Loaded {}/{}/{} from {}'.format(
-        len(train_idx), len(valid_idx), len(test_idx), dataset))
-
-    train_set = [data[i] for i in train_idx]
-    valid_set = [data[i] for i in valid_idx]
-    test_set = [data[i] for i in test_idx]
+        len(train_set), len(valid_set), len(test_set), dataset))
 
   all_sets = np.concatenate((train_set, valid_set, test_set))
   tf.logging.info('Dataset combined: {} ({}/{}/{})'.format(
