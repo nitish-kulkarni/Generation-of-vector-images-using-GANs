@@ -47,7 +47,8 @@ for category in categories:
 	inputfile=os.path.join(sketch_dir,'sketchrnn%2F'+category+'.npy')
 	sketches=np.load(inputfile)
 	for i in range(len(sketches)):
-		corrimage=category+'%'+str(clusterinfo[category][category+'%'+sketches[i,1]]).zfill(2)
+		cat_num = category+'%'+str(sketches[i,1]).zfill(5)
+		corrimage=category+'%'+str(clusterinfo[category][cat_num]).zfill(2)
 		final_dataset+=[[sketches[i,0],image_embed[corrimage]]]
 pickle.dump(final_dataset,open('final_dataset.p','wb'))
 
