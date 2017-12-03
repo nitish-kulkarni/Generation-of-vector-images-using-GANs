@@ -10,3 +10,6 @@ sketch_sml/*
 tmp/*
 *.p
 *.pyc
+train.txt
+valid.txt
+test.txt
