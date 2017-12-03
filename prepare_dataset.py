@@ -49,7 +49,7 @@ for category in categories:
 	for i in range(len(sketches)):
 		cat_num = category+'%'+str(sketches[i,1]).zfill(5)
 		corrimage=category+'%'+str(clusterinfo[category][cat_num]).zfill(2)
-		data+=[[sketches[i,0],image_embed[corrimage]]]
+		data+=[[cat_num,sketches[i,0],image_embed[corrimage]]]
 
 # Randomly set 80% for training, 10% for validation, and 10% for testing
 rand = np.random.permutation(np.arange(len(data)))
@@ -57,10 +57,28 @@ train_idx = rand[:int(8*len(data)/10)]
 valid_idx = rand[int(8*len(data)/10) : int(9*len(data)/10)]
 test_idx = rand[int(9*len(data)/10):]
 
-final_train_set = [data[i] for i in train_idx]
-final_valid_set = [data[i] for i in valid_idx]
-final_test_set = [data[i] for i in test_idx]
+# Save the list of training images
+with open('train.txt', 'w') as file:
+	final_train_set=[]
+	for i in train_idx:
+		file.write(data[i][0] + '\n')
+		final_train_set+=[data[i][1:]]
 
+# Save the list of validation images
+with open('valid.txt', 'w') as file:
+	final_valid_set=[]
+	for i in valid_idx:
+		file.write(data[i][0] + '\n')
+		final_valid_set+=[data[i][1:]]
+
+# Save the list of testing images
+with open('test.txt', 'w') as file:
+	final_test_set=[]
+	for i in test_idx:
+		file.write(data[i][0] + '\n')
+		final_test_set+=[data[i][1:]]
+
+# Pickle the final data of sketch, image embedding pairs
 final_dataset={}
 final_dataset['train'] = final_train_set
 final_dataset['valid'] = final_valid_set
