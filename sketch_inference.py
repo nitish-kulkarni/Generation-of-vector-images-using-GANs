@@ -166,7 +166,7 @@ for category in categories:
 			sketch = to_normal_strokes(sketch)
 			pred_sketch = to_normal_strokes(pred_sketch)
 
-			output+=[[cat_num,sketch,pred_sketch]]
+			output+=[[cat_num,corrimage,sketch,pred_sketch]]
 
 			print(cat_num + ' done')
 
