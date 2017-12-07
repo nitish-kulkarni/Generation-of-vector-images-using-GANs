@@ -1,6 +1,6 @@
 from sklearn.cluster import KMeans
 import numpy as np
-import json
+import pickle
 import os
 import cv2
 from collections import Counter
@@ -35,5 +35,4 @@ with open('categories.txt') as file:
 			cv2.imwrite(opfilename,(outputfiles[i,:,:]*255).astype(int))
 		print line.strip()+' Done......'
 
-with open('clusters.json', 'w+') as fp:
-    json.dump(finaldict, fp)
+pickle.dump(finaldict,open('clusters.p','wb'))
