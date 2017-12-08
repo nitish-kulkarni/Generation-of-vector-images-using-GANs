@@ -3,7 +3,7 @@ import numpy as np
 from fastdtw import fastdtw
 from scipy.spatial.distance import euclidean
 from scipy.stats import norm
-
+from process_data import *
 
 def get_class_data(data, cls_name):
     return [d for d in data if d[0].split('%')[0] == cls_name]
@@ -66,7 +66,6 @@ def sketch_scores(data, cat, img_id, score_func=min_dtw_dist):
     sketch_scores = np.array([score_func(sketches[i], excluded_sketches[i]) for i in range(len(excluded_sketches))])
     distribution = stats.norm(sketch_scores.mean(), sketch_scores.std())
     return np.array([1 - distribution.cdf(i) for i in sketch_scores])
-
 
 # def num_stroke_acc(deta):
 #     num_strokes_test = 

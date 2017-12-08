@@ -1,8 +1,63 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 SKETCHES = 'sketches'
 PRED_SKETCHES = 'pred_sketches'
 SKETCH_IDS = 'sketch_ids'
+
+def strokes_from_sketch(sketch):
+    indices = np.where(sketch[:, 2] == 1)[0] + 1
+    strokes = []
+    prev_idx = 0
+    stroke = stroke_to_xy(sketch)
+    for idx in indices:
+        strk = stroke[prev_idx:idx, :]
+        if len(strk) > 0:
+            strokes.append(strk)
+        prev_idx = idx
+    return strokes
+
+def sketch_to_xy(sketch):
+    xy = sketch[:, :2][::-1].cumsum(axis=0)
+    xy[:, 0] *= -1
+    
+    # MinMax Normalize
+    xmin, xmax = xy[:, 0].min(), xy[:, 0].max()
+    ymin, ymax = xy[:, 1].min(), xy[:, 1].max()
+    
+    def normalise(a, amin, amax):
+        l = amax - amin
+        a -= amin
+        return (a - amin) / l if l > 0 else a
+
+    # Reposition
+    xy[:, 0] = normalise(xy[:, 0], xmin, xmax)
+    xy[:, 1] = normalise(xy[:, 1], ymin, ymax)
+    xy -= xy[0,:] # Start at origin
+
+    return xy
+
+def save_sketch_as_png(sketch, filename='sample.png'):
+    plt.figure(1)
+    strokes = strokes_from_sketch(sketch)
+    for xy in strokes:
+        plt.plot(xy[:, 0], xy[:, 1], 'b')
+#         plt.plot(xy[0, 0], xy[0, 1], 'ro')
+#         plt.plot(xy[-1, 0], xy[-1, 1], 'bo')
+    plt.savefig(filename, bbox_inches='tight')
+    plt.close(1)
+
+def plot_sketch(sketch):
+    plt.figure()
+    strokes = strokes_from_sketch(sketch)
+    for xy in strokes:
+        plt.plot(xy[:, 0], xy[:, 1], 'b')
+#         plt.plot(xy[0, 0], xy[0, 1], 'ro')
+#         plt.plot(xy[-1, 0], xy[-1, 1], 'bo')
+    plt.show()
+
+def stroke_to_xy(stroke):    
+    return sketch_to_xy(stroke)
 
 def processed_data(data):
     all_data = {}
