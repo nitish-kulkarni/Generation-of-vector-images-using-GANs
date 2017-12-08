@@ -101,15 +101,13 @@ def decode(z_input, temperature=1.0, factor=0.2):
 	return strokes
 
 
-data_dir = '.'
 model_dir = './tmp/sketch_rnn/models/default'
-
 sketch_dir='sketch_sml'
 image_dir='pixel_images'
 clusterinfo=pickle.load(open('clusters.p','rb'))
 
 
-_, _, test_set, hps_model, eval_hps_model, sample_hps_model = load_env(data_dir, model_dir)
+_, _, test_set, hps_model, eval_hps_model, sample_hps_model = load_env(None, model_dir)
 
 reset_graph()
 model = Model(hps_model)
