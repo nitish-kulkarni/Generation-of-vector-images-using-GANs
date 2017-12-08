@@ -114,42 +114,6 @@ def download_pretrained_models(
 
 
 def load_dataset(data_dir, model_params, inference_mode=False):
-  datasets = []
-  if isinstance(model_params.data_set, list):
-    datasets = model_params.data_set
-  else:
-    datasets = [model_params.data_set]
-
-  train_set = None
-  valid_set = None
-  test_set = None
-
-  for dataset in datasets:
-    data_filepath = os.path.join(data_dir, dataset)
-    data = np.load(data_filepath)
-
-    train_set = data['train']
-    valid_set = data['valid']
-    test_set = data['test']
-
-    tf.logging.info('Loaded {}/{}/{} from {}'.format(
-        len(train_set), len(valid_set), len(test_set), dataset))
-
-  all_sets = np.concatenate((train_set, valid_set, test_set))
-  tf.logging.info('Dataset combined: {} ({}/{}/{})'.format(
-      len(all_sets), len(train_set), len(valid_set), len(test_set)))
-
-  # calculate the max strokes we need.
-  max_seq_len = 0
-  for strokes, img in all_sets:
-    if len(strokes) > max_seq_len:
-      max_seq_len = len(strokes)
-
-  # overwrite the hps with this calculation.
-  model_params.max_seq_len = max_seq_len
-
-  tf.logging.info('model_params.max_seq_len %i.', model_params.max_seq_len)
-
   eval_model_params = sketch_model.copy_hparams(model_params)
 
   eval_model_params.use_input_dropout = 0
@@ -165,33 +129,70 @@ def load_dataset(data_dir, model_params, inference_mode=False):
   sample_model_params.batch_size = 1  # only sample one at a time
   sample_model_params.max_seq_len = 1  # sample one point at a time
 
-  train_set = utils.DataLoader(
-      train_set,
-      model_params.batch_size,
-      max_seq_length=model_params.max_seq_len,
-      random_scale_factor=model_params.random_scale_factor,
-      augment_stroke_prob=model_params.augment_stroke_prob)
+  datasets = []
+  if isinstance(model_params.data_set, list):
+    datasets = model_params.data_set
+  else:
+    datasets = [model_params.data_set]
 
-  normalizing_scale_factor = train_set.calculate_normalizing_scale_factor()
-  train_set.normalize(normalizing_scale_factor)
+  train_set = None
+  valid_set = None
+  test_set = None
 
-  valid_set = utils.DataLoader(
-      valid_set,
-      eval_model_params.batch_size,
-      max_seq_length=eval_model_params.max_seq_len,
-      random_scale_factor=0.0,
-      augment_stroke_prob=0.0)
-  valid_set.normalize(normalizing_scale_factor)
+  if data_dir is not None:
+    for dataset in datasets:
+      data_filepath = os.path.join(data_dir, dataset)
+      data = np.load(data_filepath)
 
-  test_set = utils.DataLoader(
-      test_set,
-      eval_model_params.batch_size,
-      max_seq_length=eval_model_params.max_seq_len,
-      random_scale_factor=0.0,
-      augment_stroke_prob=0.0)
-  test_set.normalize(normalizing_scale_factor)
+      train_set = data['train']
+      valid_set = data['valid']
+      test_set = data['test']
 
-  tf.logging.info('normalizing_scale_factor %4.4f.', normalizing_scale_factor)
+      tf.logging.info('Loaded {}/{}/{} from {}'.format(
+          len(train_set), len(valid_set), len(test_set), dataset))
+
+    all_sets = np.concatenate((train_set, valid_set, test_set))
+    tf.logging.info('Dataset combined: {} ({}/{}/{})'.format(
+        len(all_sets), len(train_set), len(valid_set), len(test_set)))
+
+    # calculate the max strokes we need.
+    max_seq_len = 0
+    for strokes, img in all_sets:
+      if len(strokes) > max_seq_len:
+        max_seq_len = len(strokes)
+
+    # overwrite the hps with this calculation.
+    model_params.max_seq_len = max_seq_len
+
+    tf.logging.info('model_params.max_seq_len %i.', model_params.max_seq_len)
+
+    train_set = utils.DataLoader(
+        train_set,
+        model_params.batch_size,
+        max_seq_length=model_params.max_seq_len,
+        random_scale_factor=model_params.random_scale_factor,
+        augment_stroke_prob=model_params.augment_stroke_prob)
+
+    normalizing_scale_factor = train_set.calculate_normalizing_scale_factor()
+    train_set.normalize(normalizing_scale_factor)
+
+    valid_set = utils.DataLoader(
+        valid_set,
+        eval_model_params.batch_size,
+        max_seq_length=eval_model_params.max_seq_len,
+        random_scale_factor=0.0,
+        augment_stroke_prob=0.0)
+    valid_set.normalize(normalizing_scale_factor)
+
+    test_set = utils.DataLoader(
+        test_set,
+        eval_model_params.batch_size,
+        max_seq_length=eval_model_params.max_seq_len,
+        random_scale_factor=0.0,
+        augment_stroke_prob=0.0)
+    test_set.normalize(normalizing_scale_factor)
+
+    tf.logging.info('normalizing_scale_factor %4.4f.', normalizing_scale_factor)
 
   result = [
       train_set, valid_set, test_set, model_params, eval_model_params,
