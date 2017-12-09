@@ -5,11 +5,14 @@ from keras.applications.imagenet_utils import preprocess_input
 import pickle
 import os
 import svgwrite
+import sys
 
 from sketch_train import *
 from sketch_model import *
 from sketch_utils import *
 from rnn import *
+
+from evaluation.process_data import save_sketch_as_png
 
 def load_image(path):
 	img = image.load_img(path, target_size=(224,224))
@@ -66,7 +69,7 @@ def decode(z_input, temperature=1.0, factor=0.2):
 
 
 model_dir = './tmp/sketch_rnn/models/default'
-image_path='test.jpg'
+image_path = sys.argv[1]
 
 _, _, test_set, hps_model, eval_hps_model, sample_hps_model = load_env(None, model_dir)
 
@@ -93,6 +96,6 @@ sketch = decode(z)
 # Convert to normal strokes
 sketch = to_normal_strokes(sketch)
 
-# Draw the strokes and save as SVG
+# Draw the strokes and save
 name, _ = image_path.split('.')
-draw_strokes(sketch, factor=1, svg_filename = '%s_sketch.svg' % name)
+save_sketch_as_png(sketch, filename = '%s_sketch.png' % name)
