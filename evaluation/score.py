@@ -2,7 +2,7 @@ import numpy as np
 
 from fastdtw import fastdtw
 from scipy.spatial.distance import euclidean
-from scipy.stats import norm
+import scipy.stats as stats
 from process_data import *
 
 def get_class_data(data, cls_name):
@@ -11,26 +11,6 @@ def get_class_data(data, cls_name):
 def get_sketch_from_id(sketches, sketch_id):
     sketches = [d for d in sketches if int(d[0].split('%')[1]) == sketch_id]
     return sketches[0] if len(sketches) == 1 else []
-
-def sketch_to_xy(sketch):
-    xy = sketch[:, :2][::-1].cumsum(axis=0)
-    xy[:, 0] *= -1
-    
-    # MinMax Normalize
-    xmin, xmax = xy[:, 0].min(), xy[:, 0].max()
-    ymin, ymax = xy[:, 1].min(), xy[:, 1].max()
-    
-    def normalise(a, amin, amax):
-        l = amax - amin
-        a -= amin
-        return (a - amin) / l if l > 0 else a
-
-    # Reposition
-    xy[:, 0] = normalise(xy[:, 0], xmin, xmax)
-    xy[:, 1] = normalise(xy[:, 1], ymin, ymax)
-    xy -= xy[0,:] # Start at origin
-
-    return xy
 
 def num_strokes(sketch):
     return sketch[:, 2].sum()
@@ -53,19 +33,26 @@ def pred_sketch_scores(data, cat, img_id, score_func=min_dtw_dist, pred_sketches
     sketches = get_sketches(data, cat, img_id)
     if not pred_sketches:
         pred_sketches = get_pred_sketches(data, cat, img_id)
-    excluded_sketches = [get_sketches(data, cat, img_id, exclude_id=sk_id) for sk_id in get_sketch_ids(data, cat, img_id)]
-    sketch_scores = np.array([score_func(sketches[i], excluded_sketches[i]) for i in range(len(excluded_sketches))])
-    distribution = stats.norm(sketch_scores.mean(), sketch_scores.std())
-
-    pred_scores = np.array([score_func(pred_sketch, sketches) for pred_sketch in pred_sketches])
-    return np.array([1 - distribution.cdf(i) for i in pred_scores])
+    if len(sketches) > 1:
+        excluded_sketches = [get_sketches(data, cat, img_id, exclude_id=sk_id) for sk_id in get_sketch_ids(data, cat, img_id)]
+        sketch_scores = np.array([score_func(sketches[i], excluded_sketches[i]) for i in range(len(excluded_sketches))])
+        distribution = stats.norm(sketch_scores.mean(), sketch_scores.std())
+        pred_scores = np.array([score_func(pred_sketch, sketches) for pred_sketch in pred_sketches])
+        scores = np.array([1 - distribution.cdf(i) for i in pred_scores])
+    else:
+        scores = np.array([])
+    return scores
 
 def sketch_scores(data, cat, img_id, score_func=min_dtw_dist):
     sketches = get_sketches(data, cat, img_id)
-    excluded_sketches = [get_sketches(data, cat, img_id, exclude_id=sk_id) for sk_id in get_sketch_ids(data, cat, img_id)]
-    sketch_scores = np.array([score_func(sketches[i], excluded_sketches[i]) for i in range(len(excluded_sketches))])
-    distribution = stats.norm(sketch_scores.mean(), sketch_scores.std())
-    return np.array([1 - distribution.cdf(i) for i in sketch_scores])
+    if len(sketches) > 2:
+        excluded_sketches = [get_sketches(data, cat, img_id, exclude_id=sk_id) for sk_id in get_sketch_ids(data, cat, img_id)]
+        sketch_scores = np.array([score_func(sketches[i], excluded_sketches[i]) for i in range(len(excluded_sketches)) if len(excluded_sketches[i]) > 0])
+        distribution = stats.norm(sketch_scores.mean(), sketch_scores.std())
+        scores = np.array([1 - distribution.cdf(i) for i in sketch_scores])
+    else:
+        scores = np.array([])
+    return scores
 
 # def num_stroke_acc(deta):
 #     num_strokes_test = 
